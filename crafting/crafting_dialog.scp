@@ -516,6 +516,7 @@ else
 endif
 button 15 387 4014 4016 1 0 0
 dtext 50 388 0480 Back
+
 button 270 387 4011 4012 1 0 1
 dtext 305 388 0480 Make Item
 args = <ref1.skillmake>
@@ -549,7 +550,6 @@ for 1 <argv>
       dcroppedtext 430 *0 50 20 0480 <ref1.resources.<local._for>.val>
    endif
 endfor
-ref1.remove
 local.resource = <qval <ctag0.craft.material.<ctag0.craft.skill>> ? "_<dctag0.craft.material.<ctag0.craft.skill>>_" : "_">
 args = <ctag0.craft.item.options> // mark,exceptional,colored,recipe,expansion
 local.height = 302
@@ -575,10 +575,11 @@ IF (STRMATCH("*t_glassblowing*","<REF1.SKILLMAKE>"))
    xmfhtmlgumpcolor 170 <dlocal.height> 350 20 1044636 0 0 <ddef.dcolor_white>
    local.height += 20
 ENDIF
-
+ref1.remove
 
 [dialog d_craft_itemprop button]
 on=0
+ctag.craft_amt
 ctag.craft.item
 dialogclose d_craft_itemprop
 f_resenddialog d_craft_menu
@@ -590,7 +591,51 @@ if <ctag0.craft.material.<ctag.craft.skill>>
       local.resource = "_"
    endif
 endif
+if !<isempty <ctag.craft_amt>>
+   args = <serv.itemdef.<ctag.craft.item>.resmake>
+   for 1 <argv>
+      local.res_id=<serv.itemdef.<ctag.craft.item>.resources.<local._for>.key>
+      local.res_amt=<serv.itemdef.<ctag.craft.item>.resources.<local._for>.val>*<qval <isempty <src.ctag.craft_amt>>?1:<src.ctag0.craft_amt>>
+      local.res_name=<serv.itemdef.<serv.itemdef.<ctag.craft.item>.resources.<local._for>.key>.name>
+      if !<restest <dlocal.res_amt> <local.res_id>>
+         // sysmessage @,,1 You need <f_numformat <dlocal.res_amt>> <local.res_name> to craft <f_numformat <src.ctag0.craft_amt>> <serv.itemdef.<ctag.craft.item>.name>.
+         sysmessage @,,1 You don't have enough resources for that amount.
+         src.ctag0.craft_amt=
+         f_resenddialog d_craft_itemprop
+         return 1
+         // break
+      endif
+   endfor
+endif
 f_craft <ctag0.craft.item>
+
+ON=2
+   if <isempty <argtxt[1]>> || !<isnum <argtxt[1]>>
+      sysmessage @<def.fail>,,1 Invalid Amount.
+      f_resenddialog d_craft_itemprop
+      return 1
+   elif <dargtxt[1]> > 200
+      sysmessage @<def.fail>,,1 Invalid Amount (Max 200).
+      f_resenddialog d_craft_itemprop
+      return 1
+   endif
+   src.ctag0.craft_amt=<dargtxt[1]>
+   args = <serv.itemdef.<ctag.craft.item>.resmake>
+   for 1 <argv>
+      local.res_id=<serv.itemdef.<ctag.craft.item>.resources.<local._for>.key>
+      local.res_amt=<serv.itemdef.<ctag.craft.item>.resources.<local._for>.val>*<qval <isempty <src.ctag.craft_amt>>?1:<src.ctag0.craft_amt>>
+      local.res_name=<serv.itemdef.<serv.itemdef.<ctag.craft.item>.resources.<local._for>.key>.name>
+      if !<restest <dlocal.res_amt> <local.res_id>>
+         // sysmessage @,,1 You need <f_numformat <dlocal.res_amt>> <local.res_name> to craft <f_numformat <src.ctag0.craft_amt>> <serv.itemdef.<ctag.craft.item>.name>.
+         sysmessage @,,1 You don't have enough resources for that amount.
+         src.ctag0.craft_amt=
+         f_resenddialog d_craft_itemprop
+         return 1
+      endif
+   endfor
+   ctag.craft_amt=<argtxt[1]>
+ 	f_resenddialog d_craft_itemprop
+   return 1
 
 /////////////////////////////////////////
 /////////////////////////////////////////
