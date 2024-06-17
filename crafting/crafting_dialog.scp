@@ -516,9 +516,15 @@ else
 endif
 button 15 387 4014 4016 1 0 0
 dtext 50 388 0480 Back
+if <serv.itemdef.<ctag0.craft.item>.maxamount>==<serv.ItemsMaxAmount>
+   button 305 387 4005 4007 1 0 2
+   dtext 220 388 0480 Amount
+   resizepic 268 389 3000 36 18
+   dtextentrylimited 274 388 60 20 0480 1 3 <qval <isempty <src.ctag.craft_amt>>?1:<ctag0.craft_amt>>
+endif
+button 380 387 4011 4012 1 0 1
+dtext 415 388 0480 Make Item
 
-button 270 387 4011 4012 1 0 1
-dtext 305 388 0480 Make Item
 args = <ref1.skillmake>
 dorigin 170 112
 for 1 <argv>
@@ -547,7 +553,7 @@ for 1 <argv>
       dcroppedtext 430 *0 50 20 0480 ??
    else
       dcroppedtext 170 *20 170 20 0480 <serv.itemdef.<ref1.resources.<local._for>.key>.name>
-      dcroppedtext 430 *0 50 20 0480 <ref1.resources.<local._for>.val>
+      dcroppedtext 430 *0 50 20 0480 <eval <ref1.resources.<local._for>.val>*<qval <isempty <src.ctag.craft_amt>>?1:<src.ctag0.craft_amt>>>
    endif
 endfor
 local.resource = <qval <ctag0.craft.material.<ctag0.craft.skill>> ? "_<dctag0.craft.material.<ctag0.craft.skill>>_" : "_">
@@ -592,50 +598,49 @@ if <ctag0.craft.material.<ctag.craft.skill>>
    endif
 endif
 if !<isempty <ctag.craft_amt>>
-   args = <serv.itemdef.<ctag.craft.item>.resmake>
+   args = <serv.itemdef.<ctag0.craft.item>.resmake>
    for 1 <argv>
-      local.res_id=<serv.itemdef.<ctag.craft.item>.resources.<local._for>.key>
-      local.res_amt=<serv.itemdef.<ctag.craft.item>.resources.<local._for>.val>*<qval <isempty <src.ctag.craft_amt>>?1:<src.ctag0.craft_amt>>
-      local.res_name=<serv.itemdef.<serv.itemdef.<ctag.craft.item>.resources.<local._for>.key>.name>
+      local.res_id=<serv.itemdef.<ctag0.craft.item>.resources.<local._for>.key>
+      local.res_amt=<serv.itemdef.<ctag0.craft.item>.resources.<local._for>.val>*<qval <isempty <ctag.craft_amt>>?1:<src.ctag0.craft_amt>>
+      // local.res_name=<serv.itemdef.<serv.itemdef.<ctag0.craft.item>.resources.<local._for>.key>.name>
       if !<restest <dlocal.res_amt> <local.res_id>>
-         // sysmessage @,,1 You need <f_numformat <dlocal.res_amt>> <local.res_name> to craft <f_numformat <src.ctag0.craft_amt>> <serv.itemdef.<ctag.craft.item>.name>.
+         // sysmessage @,,1 You need<dlocal.res_amt> <local.res_name> to craft <src.ctag0.craft_amt> <serv.itemdef.<ctag0.craft.item>.name>.
          sysmessage @,,1 You don't have enough resources for that amount.
-         src.ctag0.craft_amt=
+         src.ctag.craft_amt=
          f_resenddialog d_craft_itemprop
          return 1
-         // break
       endif
    endfor
 endif
 f_craft <ctag0.craft.item>
 
 ON=2
-   if <isempty <argtxt[1]>> || !<isnum <argtxt[1]>>
-      sysmessage @<def.fail>,,1 Invalid Amount.
-      f_resenddialog d_craft_itemprop
-      return 1
-   elif <dargtxt[1]> > 200
-      sysmessage @<def.fail>,,1 Invalid Amount (Max 200).
+if <isempty <argtxt[1]>> || !<isnum <argtxt[1]>>
+   sysmessage @<def.fail>,,1 Invalid Amount.
+   f_resenddialog d_craft_itemprop
+   return 1
+elif <dargtxt[1]> > 200
+   sysmessage @<def.fail>,,1 Invalid Amount (Max 200).
+   f_resenddialog d_craft_itemprop
+   return 1
+endif
+src.ctag.craft_amt=<dargtxt[1]>
+args = <serv.itemdef.<ctag0.craft.item>.resmake>
+for 1 <argv>
+   local.res_id=<serv.itemdef.<ctag0.craft.item>.resources.<local._for>.key>
+   local.res_amt=<serv.itemdef.<ctag0.craft.item>.resources.<local._for>.val>*<qval <isempty <ctag.craft_amt>>?1:<src.ctag0.craft_amt>>
+   // local.res_name=<serv.itemdef.<serv.itemdef.<ctag0.craft.item>.resources.<local._for>.key>.name>
+   if !<restest <dlocal.res_amt> <local.res_id>>
+      // sysmessage @,,1 You need <dlocal.res_amt> <local.res_name> to craft <src.ctag0.craft_amt> <serv.itemdef.<ctag0.craft.item>.name>.
+      sysmessage @,,1 You don't have enough resources for that amount.
+      src.ctag0.craft_amt=
       f_resenddialog d_craft_itemprop
       return 1
    endif
-   src.ctag0.craft_amt=<dargtxt[1]>
-   args = <serv.itemdef.<ctag.craft.item>.resmake>
-   for 1 <argv>
-      local.res_id=<serv.itemdef.<ctag.craft.item>.resources.<local._for>.key>
-      local.res_amt=<serv.itemdef.<ctag.craft.item>.resources.<local._for>.val>*<qval <isempty <src.ctag.craft_amt>>?1:<src.ctag0.craft_amt>>
-      local.res_name=<serv.itemdef.<serv.itemdef.<ctag.craft.item>.resources.<local._for>.key>.name>
-      if !<restest <dlocal.res_amt> <local.res_id>>
-         // sysmessage @,,1 You need <f_numformat <dlocal.res_amt>> <local.res_name> to craft <f_numformat <src.ctag0.craft_amt>> <serv.itemdef.<ctag.craft.item>.name>.
-         sysmessage @,,1 You don't have enough resources for that amount.
-         src.ctag0.craft_amt=
-         f_resenddialog d_craft_itemprop
-         return 1
-      endif
-   endfor
-   ctag.craft_amt=<argtxt[1]>
- 	f_resenddialog d_craft_itemprop
-   return 1
+endfor
+ctag.craft_amt=<argtxt[1]>
+f_resenddialog d_craft_itemprop
+return 1
 
 /////////////////////////////////////////
 /////////////////////////////////////////
